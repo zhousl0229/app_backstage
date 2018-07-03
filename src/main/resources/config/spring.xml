@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task"  
+	xsi:schemaLocation="    
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd  
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd  
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd  
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd  
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/task          
+        http://www.springframework.org/schema/task/spring-task-3.0.xsd  
+        ">
+    <!--  开启注解--> 
+	<task:annotation-driven/>
+
+	<!--  导入springMvc.xml配置文件 -->
+	<import resource="classpath:config/spring-mvc.xml" />
+	<!-- 加载数据库配置 -->
+	<context:property-placeholder location="classpath:config/db.properties" />
+	<!-- 加载数据源 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${db.driverClassName}" />
+		<property name="url" value="${db.url}" />
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
+		<property name="maxActive" value="${db.maxActive}" />
+		<property name="maxIdle" value="${db.maxIdle}" />
+		<property name="minIdle" value="${db.minIdle}" />
+		<!-- <property name="maxWait" value="${db.maxWait}" /> -->
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan">
+			<list>
+				<!-- 这里value值添实体类所在的包 -->
+				<value>com.cop.backge09.model</value>
+				<value>com.cop.backge09.vo</value>
+			</list>
+		</property>
+
+		<!--        <property name="mappingDirectoryLocations">  -->
+		<!--          	<list>-->
+		<!--				<value>classpath:config/hbm/</value>-->
+		<!--			</list>-->
+		<!--        </property>  -->
+		<property name="hibernateProperties">
+			<props>
+			     <!-- sql方言 -->
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<!--打印sql -->
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<!-- 配置使用查询缓存 -->
+                <prop key="hibernate.cache.use_query_cache">${hibernate.query_cache}</prop>  
+				<!-- 配置启用二级缓存 -->
+				<prop key="hibernate.cache.use_second_level_cache">${hibernate.use_second_level_cache}</prop> 
+				<!-- 配置二级缓存的提供商 -->
+				<!-- <prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</prop> -->
+			    <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</prop> 
+				<prop key = "hibernate.cache.provider_configuration_file_resource_path"> ehcache.xml </prop >  
+				</props>
+		</property>
+	</bean>
+
+	<!-- 声明式事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+		<property name="globalRollbackOnParticipationFailure" value="false" />
+	</bean>
+
+	
+	<aop:config> 
+		<aop:pointcut id="productServiceMethods" expression="execution(* com.cop.backge09.service.impl..*.*(..))" /> 
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="productServiceMethods" />
+	</aop:config>
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!-- <tx:method name="update*" propagation="REQUIRED"  />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="edit*" propagation="REQUIRED"  />
+			<tx:method name="del*" propagation="REQUIRED"  />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="clear*" propagation="REQUIRED"       />
+			<tx:method name="pay*" propagation="REQUIRED"        />
+			<tx:method name="buy*" propagation="REQUIRED"       />
+			<tx:method name="save*" propagation="REQUIRED"     />
+			<tx:method name="return*" propagation="REQUIRED"  />
+			<tx:method name="check*" read-only="true"        />
+			<tx:method name="show*" read-only="true"        />
+			<tx:method name="get*" read-only="true"        />
+			<tx:method name="*" read-only="false"         /> -->
+			<tx:method name="return*" propagation="REQUIRED"  />
+		</tx:attributes>
+	</tx:advice> 
+<!-- 自动调度需要扫描的包 -->  <!-- 
+    <context:component-scan base-package="*" />   
+    <task:executor id="executor" pool-size="5" />      
+    <task:scheduler id="scheduler" pool-size="10" />    
+    <task:annotation-driven executor="executor" scheduler="scheduler" />   -->
+</beans>  
